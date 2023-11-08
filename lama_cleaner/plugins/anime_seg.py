@@ -21,9 +21,7 @@ class REBNCONV(nn.Module):
 
     def forward(self, x):
         hx = x
-        xout = self.relu_s1(self.bn_s1(self.conv_s1(hx)))
-
-        return xout
+        return self.relu_s1(self.bn_s1(self.conv_s1(hx)))
 
 
 ## upsample tensor 'src' to have the same spatial size with tensor 'tar'
@@ -433,10 +431,7 @@ class AnimeSeg(BasePlugin):
         s = 1024
 
         h0, w0 = h, w = rgb_np_img.shape[0], rgb_np_img.shape[1]
-        if h > w:
-            h, w = s, int(s * w / h)
-        else:
-            h, w = int(s * h / w), s
+        h, w = (s, int(s * w / h)) if h > w else (int(s * h / w), s)
         ph, pw = s - h, s - w
         tmpImg = np.zeros([s, s, 3], dtype=np.float32)
         tmpImg[ph // 2 : ph // 2 + h, pw // 2 : pw // 2 + w] = (

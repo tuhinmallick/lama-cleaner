@@ -51,7 +51,7 @@ def test_instruct_pix2pix_snow(disable_nsfw, cpu_offload):
                          cpu_offload=cpu_offload)
     cfg = get_config(strategy=HDStrategy.ORIGINAL, prompt='What if it were snowing?', p2p_steps=sd_steps)
 
-    name = f"snow"
+    name = "snow"
 
     assert_equal(
         model,

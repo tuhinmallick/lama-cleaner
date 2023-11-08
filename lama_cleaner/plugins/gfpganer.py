@@ -75,10 +75,7 @@ class MyGFPGANer(GFPGANer):
         )
 
         loadnet = torch.load(model_path)
-        if "params_ema" in loadnet:
-            keyname = "params_ema"
-        else:
-            keyname = "params"
+        keyname = "params_ema" if "params_ema" in loadnet else "params"
         self.gfpgan.load_state_dict(loadnet[keyname], strict=True)
         self.gfpgan.eval()
         self.gfpgan = self.gfpgan.to(self.device)

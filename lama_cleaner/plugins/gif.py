@@ -99,9 +99,7 @@ def make_compare_gif(
             )
         images.append(new_frame)
 
-    for i in range(30):
-        images.append(src_img)
-
+    images.extend(src_img for _ in range(30))
     cubic_bezier_points.reverse()
     # Generate images to make Gif from left to right
     for i in range(num_frames):
@@ -119,9 +117,7 @@ def make_compare_gif(
             )
         images.append(new_frame)
 
-    for _ in range(30):
-        images.append(clean_img)
-
+    images.extend(clean_img for _ in range(30))
     img_byte_arr = io.BytesIO()
     clean_img.save(
         img_byte_arr,
@@ -143,7 +139,6 @@ class MakeGIF(BasePlugin):
         origin_image = rgb_np_img
         clean_image_bytes = files["clean_img"].read()
         clean_image, _ = load_img(clean_image_bytes)
-        gif_bytes = make_compare_gif(
+        return make_compare_gif(
             Image.fromarray(origin_image), Image.fromarray(clean_image)
         )
-        return gif_bytes

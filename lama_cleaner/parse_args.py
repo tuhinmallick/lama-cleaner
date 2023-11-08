@@ -238,19 +238,17 @@ def parse_args():
         if os.path.isfile(args.input):
             if imghdr.what(args.input) is None:
                 parser.error(f"invalid --input: {args.input} is not a valid image file")
-        else:
-            if args.output_dir is None:
-                parser.error(
-                    f"invalid --input: {args.input} is a directory, --output-dir is required"
-                )
+        elif args.output_dir is None:
+            parser.error(
+                f"invalid --input: {args.input} is a directory, --output-dir is required"
+            )
 
     if args.output_dir is not None:
         output_dir = Path(args.output_dir)
         if not output_dir.exists():
             logger.info(f"Creating output directory: {output_dir}")
             output_dir.mkdir(parents=True)
-        else:
-            if not output_dir.is_dir():
-                parser.error(f"invalid --output-dir: {output_dir} is not a directory")
+        elif not output_dir.is_dir():
+            parser.error(f"invalid --output-dir: {output_dir} is not a directory")
 
     return args

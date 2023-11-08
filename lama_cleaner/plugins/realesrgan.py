@@ -69,7 +69,7 @@ class RealESRGANUpscaler(BasePlugin):
             scale=model_info["scale"],
             model_path=model_path,
             model=model_info["model"](),
-            half=True if "cuda" in str(device) and not no_half else False,
+            half="cuda" in str(device) and not no_half,
             tile=512,
             tile_pad=10,
             pre_pad=10,
@@ -85,9 +85,7 @@ class RealESRGANUpscaler(BasePlugin):
         return result
 
     def forward(self, bgr_np_img, scale: float):
-        # 输出是 BGR
-        upsampled = self.model.enhance(bgr_np_img, outscale=scale)[0]
-        return upsampled
+        return self.model.enhance(bgr_np_img, outscale=scale)[0]
 
     def check_dep(self):
         try:

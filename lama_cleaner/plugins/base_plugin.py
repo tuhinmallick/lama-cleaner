@@ -3,8 +3,7 @@ from loguru import logger
 
 class BasePlugin:
     def __init__(self):
-        err_msg = self.check_dep()
-        if err_msg:
+        if err_msg := self.check_dep():
             logger.error(err_msg)
             exit(-1)
 

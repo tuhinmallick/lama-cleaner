@@ -10,7 +10,7 @@ def generate_filename(original_filename, *options):
     name, ext = os.path.splitext(original_filename)
     for v in options:
         if v:
-            name += "_%s" % v
+            name += f"_{v}"
     name += ext
 
     return name
@@ -22,11 +22,7 @@ def parse_size(size):
         return [size, size]
 
     if isinstance(size, (tuple, list)):
-        if len(size) == 1:
-            # If single value tuple/list is provided, exand it to two elements
-            return size + type(size)(size)
-        return size
-
+        return size + type(size)(size) if len(size) == 1 else size
     try:
         thumbnail_size = [int(x) for x in size.lower().split("x", 1)]
     except ValueError:
@@ -42,10 +38,7 @@ def parse_size(size):
 
 
 def aspect_to_string(size):
-    if isinstance(size, str):
-        return size
-
-    return "x".join(map(str, size))
+    return size if isinstance(size, str) else "x".join(map(str, size))
 
 
 IMG_SUFFIX = {'.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.PNG'}
@@ -56,11 +49,7 @@ def glob_img(p: Union[Path, str], recursive: bool = False):
     if p.is_file() and p.suffix in IMG_SUFFIX:
         yield p
     else:
-        if recursive:
-            files = Path(p).glob("**/*.*")
-        else:
-            files = Path(p).glob("*.*")
-
+        files = Path(p).glob("**/*.*") if recursive else Path(p).glob("*.*")
         for it in files:
             if it.suffix not in IMG_SUFFIX:
                 continue
