@@ -40,7 +40,7 @@ class FilesystemStorageBackend(BaseStorageBackend):
                     raise
 
         if not os.path.isdir(directory):
-            raise IOError("{} is not a directory".format(directory))
+            raise IOError(f"{directory} is not a directory")
 
         with open(filepath, "wb") as f:
             f.write(data)

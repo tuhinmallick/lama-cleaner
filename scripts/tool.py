@@ -50,12 +50,11 @@ class CheckpointMergerPipeline(DiffusionPipeline):
     def _compare_model_configs(self, dict0, dict1):
         if dict0 == dict1:
             return True
-        else:
-            config0, meta_keys0 = self._remove_meta_keys(dict0)
-            config1, meta_keys1 = self._remove_meta_keys(dict1)
-            if config0 == config1:
-                print(f"Warning !: Mismatch in keys {meta_keys0} and {meta_keys1}.")
-                return True
+        config0, meta_keys0 = self._remove_meta_keys(dict0)
+        config1, meta_keys1 = self._remove_meta_keys(dict1)
+        if config0 == config1:
+            print(f"Warning !: Mismatch in keys {meta_keys0} and {meta_keys1}.")
+            return True
         return False
 
     def _remove_meta_keys(self, config_dict: Dict):
@@ -152,7 +151,6 @@ class CheckpointMergerPipeline(DiffusionPipeline):
                 raise ValueError(
                     "Incompatible checkpoints. Please check model_index.json for the models."
                 )
-                print(config_dicts[0], config_dicts[1])
         print("Compatible model_index.json files found")
         # Step 2: Basic Validation has succeeded. Let's download the models and save them into our local files.
         cached_folders = []
@@ -203,12 +201,12 @@ class CheckpointMergerPipeline(DiffusionPipeline):
         if len(cached_folders) > 2:
             checkpoint_path_2 = os.path.join(cached_folders[2])
 
-        if interp == "sigmoid":
-            theta_func = CheckpointMergerPipeline.sigmoid
+        if interp == "add_diff":
+            theta_func = CheckpointMergerPipeline.add_difference
         elif interp == "inv_sigmoid":
             theta_func = CheckpointMergerPipeline.inv_sigmoid
-        elif interp == "add_diff":
-            theta_func = CheckpointMergerPipeline.add_difference
+        elif interp == "sigmoid":
+            theta_func = CheckpointMergerPipeline.sigmoid
         else:
             theta_func = CheckpointMergerPipeline.weighted_sum
 
@@ -217,29 +215,25 @@ class CheckpointMergerPipeline(DiffusionPipeline):
             if not attr.startswith("_"):
                 checkpoint_path_1 = os.path.join(cached_folders[1], attr)
                 if os.path.exists(checkpoint_path_1):
-                    files = list(
-                        (
-                            *glob.glob(
-                                os.path.join(checkpoint_path_1, "*.safetensors")
-                            ),
-                            *glob.glob(os.path.join(checkpoint_path_1, "*.bin")),
-                        )
-                    )
-                    checkpoint_path_1 = files[0] if len(files) > 0 else None
+                    files = [
+                        *glob.glob(
+                            os.path.join(checkpoint_path_1, "*.safetensors")
+                        ),
+                        *glob.glob(os.path.join(checkpoint_path_1, "*.bin")),
+                    ]
+                    checkpoint_path_1 = files[0] if files else None
                 if len(cached_folders) < 3:
                     checkpoint_path_2 = None
                 else:
                     checkpoint_path_2 = os.path.join(cached_folders[2], attr)
                     if os.path.exists(checkpoint_path_2):
-                        files = list(
-                            (
-                                *glob.glob(
-                                    os.path.join(checkpoint_path_2, "*.safetensors")
-                                ),
-                                *glob.glob(os.path.join(checkpoint_path_2, "*.bin")),
-                            )
-                        )
-                        checkpoint_path_2 = files[0] if len(files) > 0 else None
+                        files = [
+                            *glob.glob(
+                                os.path.join(checkpoint_path_2, "*.safetensors")
+                            ),
+                            *glob.glob(os.path.join(checkpoint_path_2, "*.bin")),
+                        ]
+                        checkpoint_path_2 = files[0] if files else None
                 # For an attr if both checkpoint_path_1 and 2 are None, ignore.
                 # If atleast one is present, deal with it according to interp method, of course only if the state_dict keys match.
                 if checkpoint_path_1 is None and checkpoint_path_2 is None:
@@ -285,10 +279,10 @@ class CheckpointMergerPipeline(DiffusionPipeline):
                             else torch.load(checkpoint_path_2, map_location="cpu")
                         )
 
-                    if not theta_0.keys() == theta_1.keys():
+                    if theta_0.keys() != theta_1.keys():
                         print(f"Skipping {attr}: key mismatch")
                         continue
-                    if theta_2 and not theta_1.keys() == theta_2.keys():
+                    if theta_2 and theta_1.keys() != theta_2.keys():
                         print(f"Skipping {attr}:y mismatch")
                 except Exception as e:
                     print(f"Skipping {attr} do to an unexpected error: {str(e)}")

@@ -60,7 +60,7 @@ class MaskDecoder(nn.Module):
         self.output_hypernetworks_mlps = nn.ModuleList(
             [
                 MLP(transformer_dim, transformer_dim, transformer_dim // 8, 3)
-                for i in range(self.num_mask_tokens)
+                for _ in range(self.num_mask_tokens)
             ]
         )
 
@@ -99,10 +99,7 @@ class MaskDecoder(nn.Module):
         )
 
         # Select the correct mask or masks for outptu
-        if multimask_output:
-            mask_slice = slice(1, None)
-        else:
-            mask_slice = slice(0, 1)
+        mask_slice = slice(1, None) if multimask_output else slice(0, 1)
         masks = masks[:, mask_slice, :, :]
         iou_pred = iou_pred[:, mask_slice]
 
@@ -136,9 +133,10 @@ class MaskDecoder(nn.Module):
         # Upscale mask embeddings and predict masks using the mask tokens
         src = src.transpose(1, 2).view(b, c, h, w)
         upscaled_embedding = self.output_upscaling(src)
-        hyper_in_list: List[torch.Tensor] = []
-        for i in range(self.num_mask_tokens):
-            hyper_in_list.append(self.output_hypernetworks_mlps[i](mask_tokens_out[:, i, :]))
+        hyper_in_list: List[torch.Tensor] = [
+            self.output_hypernetworks_mlps[i](mask_tokens_out[:, i, :])
+            for i in range(self.num_mask_tokens)
+        ]
         hyper_in = torch.stack(hyper_in_list, dim=1)
         b, c, h, w = upscaled_embedding.shape
         masks = (hyper_in @ upscaled_embedding.view(b, c, h * w)).view(b, -1, h, w)

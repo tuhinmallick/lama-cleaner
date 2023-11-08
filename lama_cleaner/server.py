@@ -164,15 +164,11 @@ def save_image():
 
 @app.route("/medias/<tab>")
 def medias(tab):
-    if tab == "image":
-        response = make_response(jsonify(thumb.media_names), 200)
-    else:
-        response = make_response(jsonify(thumb.output_media_names), 200)
-    # response.last_modified = thumb.modified_time[tab]
-    # response.cache_control.no_cache = True
-    # response.cache_control.max_age = 0
-    # response.make_conditional(request)
-    return response
+    return (
+        make_response(jsonify(thumb.media_names), 200)
+        if tab == "image"
+        else make_response(jsonify(thumb.output_media_names), 200)
+    )
 
 
 @app.route("/media/<tab>/<filename>")
@@ -194,9 +190,7 @@ def media_thumbnail_file(tab, filename):
     if height:
         height = int(float(height))
 
-    directory = thumb.root_directory
-    if tab == "output":
-        directory = thumb.output_dir
+    directory = thumb.output_dir if tab == "output" else thumb.root_directory
     thumb_filename, (width, height) = thumb.get_thumbnail(
         directory, filename, width, height
     )
@@ -293,9 +287,8 @@ def process():
         if "CUDA out of memory. " in str(e):
             # NOTE: the string may change?
             return "CUDA out of memory", 500
-        else:
-            logger.exception(e)
-            return f"{str(e)}", 500
+        logger.exception(e)
+        return f"{str(e)}", 500
     finally:
         logger.info(f"process time: {(time.time() - start) * 1000}ms")
         torch_gc()
@@ -359,9 +352,8 @@ def run_plugin():
         if "CUDA out of memory. " in str(e):
             # NOTE: the string may change?
             return "CUDA out of memory", 500
-        else:
-            logger.exception(e)
-            return "Internal Server Error", 500
+        logger.exception(e)
+        return "Internal Server Error", 500
 
     logger.info(f"{name} process time: {(time.time() - start) * 1000}ms")
     torch_gc()
@@ -396,7 +388,7 @@ def run_plugin():
                 (rgb_res, alpha_channel[:, :, np.newaxis]), axis=-1
             )
 
-    response = make_response(
+    return make_response(
         send_file(
             io.BytesIO(
                 pil_to_bytes(
@@ -409,7 +401,6 @@ def run_plugin():
             mimetype=f"image/{ext}",
         )
     )
-    return response
 
 
 @app.route("/server_config", methods=["GET"])
@@ -462,17 +453,16 @@ def index():
 
 @app.route("/inputimage")
 def set_input_photo():
-    if input_image_path:
-        with open(input_image_path, "rb") as f:
-            image_in_bytes = f.read()
-        return send_file(
-            input_image_path,
-            as_attachment=True,
-            download_name=Path(input_image_path).name,
-            mimetype=f"image/{get_image_ext(image_in_bytes)}",
-        )
-    else:
+    if not input_image_path:
         return "No Input Image"
+    with open(input_image_path, "rb") as f:
+        image_in_bytes = f.read()
+    return send_file(
+        input_image_path,
+        as_attachment=True,
+        download_name=Path(input_image_path).name,
+        mimetype=f"image/{get_image_ext(image_in_bytes)}",
+    )
 
 
 def build_plugins(args):
@@ -507,7 +497,7 @@ def build_plugins(args):
             logger.info("Use realesrgan as GFPGAN background upscaler")
         else:
             logger.info(
-                f"GFPGAN no background upscaler, use --enable-realesrgan to enable it"
+                "GFPGAN no background upscaler, use --enable-realesrgan to enable it"
             )
         plugins[GFPGANPlugin.name] = GFPGANPlugin(
             args.gfpgan_device, upscaler=plugins.get(RealESRGANUpscaler.name, None)
@@ -521,7 +511,7 @@ def build_plugins(args):
         )
 
     if args.enable_gif:
-        logger.info(f"Initialize GIF plugin")
+        logger.info("Initialize GIF plugin")
         plugins[MakeGIF.name] = MakeGIF()
 
 
@@ -556,11 +546,11 @@ def main(args):
     is_desktop = args.gui
     if is_disable_model_switch:
         logger.info(
-            f"Start with --disable-model-switch, model switch on frontend is disable"
+            "Start with --disable-model-switch, model switch on frontend is disable"
         )
 
     if args.input and os.path.isdir(args.input):
-        logger.info(f"Initialize file manager")
+        logger.info("Initialize file manager")
         thumb = FileManager(app)
         is_enable_file_manager = True
         app.config["THUMBNAIL_MEDIA_ROOT"] = args.input
@@ -568,15 +558,15 @@ def main(args):
             args.output_dir, "lama_cleaner_thumbnails"
         )
         thumb.output_dir = Path(args.output_dir)
-        # thumb.start()
-        # try:
-        #     while True:
-        #         time.sleep(1)
-        # finally:
-        #     thumb.image_dir_observer.stop()
-        #     thumb.image_dir_observer.join()
-        #     thumb.output_dir_observer.stop()
-        #     thumb.output_dir_observer.join()
+            # thumb.start()
+            # try:
+            #     while True:
+            #         time.sleep(1)
+            # finally:
+            #     thumb.image_dir_observer.stop()
+            #     thumb.image_dir_observer.join()
+            #     thumb.output_dir_observer.stop()
+            #     thumb.output_dir_observer.join()
 
     else:
         input_image_path = args.input

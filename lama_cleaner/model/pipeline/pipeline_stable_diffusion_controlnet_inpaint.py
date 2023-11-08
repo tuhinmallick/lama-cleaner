@@ -113,16 +113,8 @@ def prepare_mask_and_masked_image(image, mask):
         if mask.ndim == 2:
             mask = mask.unsqueeze(0).unsqueeze(0)
 
-        # Batch single mask or add channel dim
         if mask.ndim == 3:
-            # Single batched mask, no channel dim or single mask not batched but channel dim
-            if mask.shape[0] == 1:
-                mask = mask.unsqueeze(0)
-
-            # Batched masks no channel dim
-            else:
-                mask = mask.unsqueeze(1)
-
+            mask = mask.unsqueeze(0) if mask.shape[0] == 1 else mask.unsqueeze(1)
         assert (
             image.ndim == 4 and mask.ndim == 4
         ), "Image and Mask must have 4 dimensions"
@@ -255,7 +247,7 @@ class StableDiffusionControlNetInpaintPipeline(StableDiffusionControlNetPipeline
 
         # duplicate mask and masked_image_latents for each generation per prompt, using mps friendly method
         if mask.shape[0] < batch_size:
-            if not batch_size % mask.shape[0] == 0:
+            if batch_size % mask.shape[0] != 0:
                 raise ValueError(
                     "The passed mask and the required batch size don't match. Masks are supposed to be duplicated to"
                     f" a total batch size of {batch_size}, but {mask.shape[0]} masks were passed. Make sure the number"
@@ -263,7 +255,7 @@ class StableDiffusionControlNetInpaintPipeline(StableDiffusionControlNetPipeline
                 )
             mask = mask.repeat(batch_size // mask.shape[0], 1, 1, 1)
         if masked_image_latents.shape[0] < batch_size:
-            if not batch_size % masked_image_latents.shape[0] == 0:
+            if batch_size % masked_image_latents.shape[0] != 0:
                 raise ValueError(
                     "The passed images and the required batch size don't match. Images are supposed to be duplicated"
                     f" to a total batch size of {batch_size}, but {masked_image_latents.shape[0]} images were passed."

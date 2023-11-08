@@ -36,14 +36,13 @@ def get_cache_path_by_url(url):
     if not os.path.isdir(model_dir):
         os.makedirs(model_dir)
     filename = os.path.basename(parts.path)
-    cached_file = os.path.join(model_dir, filename)
-    return cached_file
+    return os.path.join(model_dir, filename)
 
 
 def download_model(url, model_md5: str = None):
     cached_file = get_cache_path_by_url(url)
     if not os.path.exists(cached_file):
-        sys.stderr.write('Downloading: "{}" to {}\n'.format(url, cached_file))
+        sys.stderr.write(f'Downloading: "{url}" to {cached_file}\n')
         hash_prefix = None
         download_url_to_file(url, cached_file, hash_prefix, progress=True)
         if model_md5:
@@ -67,9 +66,7 @@ def download_model(url, model_md5: str = None):
 
 
 def ceil_modulo(x, mod):
-    if x % mod == 0:
-        return x
-    return (x // mod + 1) * mod
+    return x if x % mod == 0 else (x // mod + 1) * mod
 
 
 def handle_error(model_path, model_md5, e):
@@ -131,8 +128,7 @@ def numpy_to_bytes(image_numpy: np.ndarray, ext: str) -> bytes:
         image_numpy,
         [int(cv2.IMWRITE_JPEG_QUALITY), 100, int(cv2.IMWRITE_PNG_COMPRESSION), 0],
     )[1]
-    image_bytes = data.tobytes()
-    return image_bytes
+    return data.tobytes()
 
 
 def pil_to_bytes(pil_img, ext: str, quality: int = 95, exif_infos={}) -> bytes:
@@ -169,14 +165,13 @@ def load_img(img_bytes, gray: bool = False, return_exif: bool = False):
     if gray:
         image = image.convert("L")
         np_img = np.array(image)
+    elif image.mode == "RGBA":
+        np_img = np.array(image)
+        alpha_channel = np_img[:, :, -1]
+        np_img = cv2.cvtColor(np_img, cv2.COLOR_RGBA2RGB)
     else:
-        if image.mode == "RGBA":
-            np_img = np.array(image)
-            alpha_channel = np_img[:, :, -1]
-            np_img = cv2.cvtColor(np_img, cv2.COLOR_RGBA2RGB)
-        else:
-            image = image.convert("RGB")
-            np_img = np.array(image)
+        image = image.convert("RGB")
+        np_img = np.array(image)
 
     if return_exif:
         return np_img, alpha_channel, exif_infos
@@ -285,8 +280,7 @@ def only_keep_largest_contour(mask: np.ndarray) -> List[np.ndarray]:
             max_area = area
             max_index = i
 
-    if max_index != -1:
-        new_mask = np.zeros_like(mask)
-        return cv2.drawContours(new_mask, contours, max_index, 255, -1)
-    else:
+    if max_index == -1:
         return mask
+    new_mask = np.zeros_like(mask)
+    return cv2.drawContours(new_mask, contours, max_index, 255, -1)

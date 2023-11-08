@@ -45,10 +45,10 @@ class SamPredictor:
             image in HWC uint8 format, with pixel values in [0, 255].
           image_format (str): The color format of the image, in ['RGB', 'BGR'].
         """
-        assert image_format in [
+        assert image_format in {
             "RGB",
             "BGR",
-        ], f"image_format must be in ['RGB', 'BGR'], is {image_format}."
+        }, f"image_format must be in ['RGB', 'BGR'], is {image_format}."
         if image_format != self.model.image_format:
             image = image[..., ::-1]
 
@@ -225,11 +225,7 @@ class SamPredictor:
                 "An image must be set with .set_image(...) before mask prediction."
             )
 
-        if point_coords is not None:
-            points = (point_coords, point_labels)
-        else:
-            points = None
-
+        points = (point_coords, point_labels) if point_coords is not None else None
         # Embed prompts
         sparse_embeddings, dense_embeddings = self.model.prompt_encoder(
             points=points,

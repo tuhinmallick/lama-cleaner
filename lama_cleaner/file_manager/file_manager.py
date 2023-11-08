@@ -96,19 +96,13 @@ class FileManager:
     def root_directory(self):
         path = self.app.config["THUMBNAIL_MEDIA_ROOT"]
 
-        if os.path.isabs(path):
-            return path
-        else:
-            return os.path.join(self.app.root_path, path)
+        return path if os.path.isabs(path) else os.path.join(self.app.root_path, path)
 
     @property
     def thumbnail_directory(self):
         path = self.app.config["THUMBNAIL_MEDIA_THUMBNAIL_ROOT"]
 
-        if os.path.isabs(path):
-            return path
-        else:
-            return os.path.join(self.app.root_path, path)
+        return path if os.path.isabs(path) else os.path.join(self.app.root_path, path)
 
     @property
     def root_url(self):
@@ -214,17 +208,16 @@ class FileManager:
 
     @staticmethod
     def colormode(image, colormode="RGB"):
-        if colormode == "RGB" or colormode == "RGBA":
+        if colormode in ["RGB", "RGBA"]:
             if image.mode == "RGBA":
                 return image
-            if image.mode == "LA":
-                return image.convert("RGBA")
-            return image.convert(colormode)
-
-        if colormode == "GRAY":
-            return image.convert("L")
-
-        return image.convert(colormode)
+            else:
+                return (
+                    image.convert("RGBA")
+                    if image.mode == "LA"
+                    else image.convert(colormode)
+                )
+        return image.convert("L") if colormode == "GRAY" else image.convert(colormode)
 
     @staticmethod
     def background(original_image, color=0xFF):
